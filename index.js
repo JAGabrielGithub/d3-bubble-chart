@@ -18,6 +18,10 @@ const dashboard_style = `
   stroke: #000;
   stroke-width: 1.5px;
 }
+.legend-item:hover{
+    stroke: #000;
+    stroke-width: 1.5px;
+}
 
 .node--leaf {
   fill: white;
@@ -622,26 +626,53 @@ export class D3Test extends HTMLElement {
               })
               .on("click", function (d) {
                 if (focus !== d){
+                    console.log(d)
                     zoom(d), d3.event.stopPropagation();
                 } 
               });
 
           
+            // var text = g
+            //   .selectAll("text")
+            //   .data(nodes)
+            //   .enter()
+            //   .append("text")
+            //   .attr("class", "label")
+            //   .attr("app-name", function (d) {
+            //     return d.data.name;
+            //   })
+            //   .style("fill-opacity", function (d) {
+            //     return d.parent === root ? 1 : 0;
+            //   })
+            //   .text(function (d) {
+            //     return d.data.name;
+            //   })
+
             var text = g
               .selectAll("text")
               .data(nodes)
               .enter()
               .append("text")
-              .attr("class", "label")
-              .attr("app-name", function (d) {
-                return d.data.name;
-              })
-              .style("fill-opacity", function (d) {
-                return d.parent === root ? 1 : 0;
-              })
-              .text(function (d) {
-                return d.data.name;
-              })
+                .attr("app-name", function (d) {
+                    return d.data.name;
+                })
+                .attr("class", "label")
+                .attr("dy", "-0.4em")
+                .attr('y', 5)
+                .style("text-anchor", "middle")
+                .append("tspan")
+                .attr("class", "label-app")
+                .text(d => d.data.name)
+                .style("fill-opacity", function (d) {
+                        return d.parent === root ? 1 : 0;
+                      })
+                // .append("tspan")
+                // .attr("class", "label-spent")
+                // .attr("x", 0)
+                // .attr("dy", "1.2em")
+                // .text(d => parseFloat(d.data.spent_time).toFixed(2))
+
+
           
             var node = g.selectAll("circle,text");
           
@@ -650,12 +681,10 @@ export class D3Test extends HTMLElement {
             });
           
             zoomTo([root.x, root.y, root.r * 2 + margin]);
-            console.log(root)
           
             function zoom(d) {
               var focus0 = focus;
               focus = d;
-              console.log(view)
           
               var transition = d3
                 .transition()
@@ -698,14 +727,14 @@ export class D3Test extends HTMLElement {
                 circles.forEach(function(e){
                     let app_name = e.getAttribute("app-name")
                     if(app_name == d.data.name){
-                        // console.log(e.innerHTML)
-                        // console.log(`${e.innerHTML.length} - ${((d.r * k) * 0.5)}`)
+                        let label_app = e.querySelector('.label-app')
+                        
                         if(((d.r * k) * 0.5) < d.data.name.length){
-                            e.innerHTML = d.data.name.substring(0, Math.round(((d.r * k) * 0.3)))
+                            label_app.innerHTML = d.data.name.substring(0, Math.round(((d.r * k) * 0.3)))
                         }
                         else{
-                            e.innerHTML = d.data.name
-                        }
+                            label_app.innerHTML = d.data.name + `<tspan class="label-spent" x="0" dy="1.2em">${parseFloat(d.data.spent_time).toFixed(2)}</tspan>`
+                        }                        
                     }
                 })
                 // console.log(`r: ${d.r * k}`)
@@ -725,12 +754,20 @@ export class D3Test extends HTMLElement {
             var legent_rects = legends.append("rect")
             .attr("width", 10)
             .attr("height", 10)
+            .attr("class", "legend-item")
             .attr("x", 10)
             .attr("y", (_, i) => {return (i * 15)})
             .style("fill", (d,i)=>{return color(d.r)})
             .style("display", function(d){
                 return d.parent ? "inline" : "none";
             })
+            .on("click", function (d) {
+                console.log("label")
+                if (focus !== d){
+                    console.log(d)
+                    zoom(d), d3.event.stopPropagation();
+                } 
+              });
 
             legends.append("text")
                 .attr("x", 30)
@@ -764,47 +801,3 @@ export class D3Test extends HTMLElement {
 
 if(document.createElement('d3-test').constructor.__proto__ !== HTMLElement) 
     window.customElements.define('d3-test', D3Test);
-
-
-export class TestElement extends HTMLElement {
-    static get observedAttributes() { return ['app-name'] }
-    constructor(){
-
-        super();
-
-        this.controller = new AbortController()
-        let tmpl = document.createElement('template');
-        tmpl.innerHTML = (this.style_markup +this.html_markup);
-
-        let shadowRoot = this.attachShadow({mode: 'open'});
-        shadowRoot.appendChild(tmpl.content.cloneNode(true));
-    }
-
-    get style_markup() { return `
-        <style>
-            span {
-                overflow: hidden;
-                white-space: nowrap;
-                text-overflow: ellipsis;
-            }
-        </style>` }
-    get html_markup() { return `
-        <div><span class="app-name"></span></div>
-        
-        ` }
-
-    connectedCallback() {
-    }
-
-    disconnectedCallback() { }
-
-    attributeChangedCallback(attr, oldVal, newVal) {
-        if(oldVal === newVal) return;
-
-        this.shadowRoot.querySelector(".app-name").innerHTML = newVal
-    }
-}
-
-
-if(document.createElement('test-element').constructor.__proto__ !== HTMLElement) 
-    window.customElements.define('test-element', TestElement);
