@@ -74,6 +74,11 @@ export class D3Test extends HTMLElement {
         var width = 800
         var height = 600
 
+        let dragx =0;
+        let dragy = 0;
+        let current_v = []
+        let current_k = 0
+
         // append the svg object to the body of the page
         var svg_canvas = this.shadowRoot.querySelector("#svg-apps")
         var svg_legend = this.shadowRoot.querySelector("#svg-legend")
@@ -91,6 +96,35 @@ export class D3Test extends HTMLElement {
         // .interpolate(d3.interpolateHcl);
 
         // d3.select(svg_canvas).call(d3.zoom().on("zoom", function () {svg.attr("transform", d3.event.transform)}))
+        d3.select(svg_canvas).call(d3.zoom().on("zoom", function () 
+                            {
+                                var transform = d3.event.transform;
+                                var currentx = (transform.toString().split(',')[0]).split('(')[1]
+                                var currenty = (transform.toString().split(',')[1]).split(')')[0]
+
+                                if(dragx == 0 && dragy == 0){
+                                    dragx = currentx;
+                                    dragy = currenty;
+                                }
+                                if(current_k > 10){
+                                    current_k = 9;
+                                }
+                                let sensitivity = (current_k / 10)
+
+                                let distance_x = (dragx - currentx)
+                                let distance_y = (dragy - currenty)
+                                if(distance_x != 0){
+                                    distance_x = (distance_x - (distance_x * sensitivity))
+                                }
+                                if(distance_y != 0){
+                                    distance_y = (distance_y - (distance_y * sensitivity))
+                                }
+                                                                
+                                zoomTo([current_v[0]+distance_x, current_v[1]+distance_y, current_v[2]])
+
+                                dragx = currentx;
+                                dragy = currenty;
+                            }))
 
         var color = d3.scaleOrdinal(d3.schemeCategory10)
 
@@ -652,9 +686,7 @@ export class D3Test extends HTMLElement {
                   if (d.parent !== focus) this.style.display = "none";
                 });
             }
-
             
-          
             function zoomTo(v) {
               var k = diameter / v[2];
               view = v;
@@ -669,7 +701,6 @@ export class D3Test extends HTMLElement {
                         // console.log(e.innerHTML)
                         // console.log(`${e.innerHTML.length} - ${((d.r * k) * 0.5)}`)
                         if(((d.r * k) * 0.5) < d.data.name.length){
-                            console.log("clip text")
                             e.innerHTML = d.data.name.substring(0, Math.round(((d.r * k) * 0.3)))
                         }
                         else{
@@ -680,25 +711,11 @@ export class D3Test extends HTMLElement {
                 // console.log(`r: ${d.r * k}`)
                 return d.r * k;
               });
-            }
-
-            let scrollDistance = 0;
-
-            function updateScrollPosition(diff){
-                console.log(`diff ${diff}`)
-                if(diff > 0)
-                    scrollDistance -= 10;
-                else{
-                    scrollDistance += 10;
-                }
-                scrollDistance = scrollDistance > 0 ? 0 : scrollDistance
-
-                legends.attr('transform', `translate(0,${scrollDistance})`)
+              current_v = v
+              current_k = k
             }
 
             var svg_legend_data = d3.select(svg_legend)
-            // .attr("transform", d => `translate(0, ${100 - 800})`)
-            // .on("wheel", (e) => {updateScrollPosition(d3.event.deltaY)})
 
             var legends = svg_legend_data.selectAll('g')
             .data(nodes)
