@@ -80,6 +80,7 @@ export class D3Test extends HTMLElement {
 
         let dragx =0;
         let dragy = 0;
+        let scroll_k = 0;
         let current_v = []
         let current_k = 0
 
@@ -102,9 +103,11 @@ export class D3Test extends HTMLElement {
         // d3.select(svg_canvas).call(d3.zoom().on("zoom", function () {svg.attr("transform", d3.event.transform)}))
         d3.select(svg_canvas).call(d3.zoom().on("zoom", function () 
                             {
-                                var transform = d3.event.transform;
-                                var currentx = (transform.toString().split(',')[0]).split('(')[1]
-                                var currenty = (transform.toString().split(',')[1]).split(')')[0]
+                                // var transform = d3.event.transform;
+                                // console.log(d3.event.transform)
+                                var currentx = d3.event.transform.x
+                                var currenty = d3.event.transform.y
+                                var cur_scroll_k = d3.event.transform.k;
 
                                 if(dragx == 0 && dragy == 0){
                                     dragx = currentx;
@@ -115,19 +118,38 @@ export class D3Test extends HTMLElement {
                                 }
                                 let sensitivity = (current_k / 10)
 
-                                let distance_x = (dragx - currentx)
-                                let distance_y = (dragy - currenty)
+                                let distance_x = 0
+                                let distance_y = 0
+                                let distance_scroll = 0
+                                if(scroll_k != cur_scroll_k ){
+                                    if(scroll_k > cur_scroll_k){
+                                        distance_scroll = 20
+                                    }
+                                    else{
+                                        distance_scroll = -20
+                                    }
+                                }
+                                else{
+                                    distance_x = dragx - currentx
+                                    distance_y = dragy - currenty
+                                }
                                 if(distance_x != 0){
                                     distance_x = (distance_x - (distance_x * sensitivity))
                                 }
                                 if(distance_y != 0){
                                     distance_y = (distance_y - (distance_y * sensitivity))
                                 }
-                                                                
-                                zoomTo([current_v[0]+distance_x, current_v[1]+distance_y, current_v[2]])
+
+                                if(current_v[2] < 25 & distance_scroll < 0){
+                                    distance_scroll = 0
+                                }
+                                // console.log(`current_v: ${current_v[0]} - ${distance_x}`)
+                                // console.log(`current_v: ${current_v[1]} - ${distance_y}`)
+                                zoomTo([current_v[0]+distance_x, current_v[1]+distance_y, current_v[2]+distance_scroll])
 
                                 dragx = currentx;
                                 dragy = currenty;
+                                scroll_k = cur_scroll_k
                             }))
 
         var color = d3.scaleOrdinal(d3.schemeCategory10)
@@ -612,7 +634,7 @@ export class D3Test extends HTMLElement {
               nodes = pack(root).descendants(),
               view;
 
-            console.log(nodes)
+            // console.log(nodes)
           
             var circle = g
               .selectAll("circle")
@@ -626,7 +648,7 @@ export class D3Test extends HTMLElement {
               })
               .on("click", function (d) {
                 if (focus !== d){
-                    console.log(d)
+                    // console.log(d)
                     zoom(d), d3.event.stopPropagation();
                 } 
               });
@@ -762,11 +784,12 @@ export class D3Test extends HTMLElement {
                 return d.parent ? "inline" : "none";
             })
             .on("click", function (d) {
-                console.log("label")
                 if (focus !== d){
-                    console.log(d)
                     zoom(d), d3.event.stopPropagation();
                 } 
+                else{
+                    zoom(root)
+                }
               });
 
             legends.append("text")
